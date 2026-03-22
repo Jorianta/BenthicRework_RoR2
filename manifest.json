@@ -1,0 +1,11 @@
+{
+    "name": "Benthic_Rebloomed",
+    "author": "Braquen",
+    "version_number": "1.0.1",
+    "website_url": "https://github.com/Jorianta/BenthicRework_RoR2",
+    "description": "A rework to benthic to make it work with your build, rather than against it.",
+    "dependencies": [
+        "RiskofThunder-HookGenPatcher-1.2.3",
+        "Rune580-Risk_Of_Options-2.5.3"
+    ]
+}

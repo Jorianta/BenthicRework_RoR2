@@ -11,14 +11,21 @@ using BepInEx.Configuration;
 using RiskOfOptions.OptionConfigs;
 using RiskOfOptions.Options;
 
+
+
 using System.Collections.Generic;
+using UnityEngine.AddressableAssets;
+using Newtonsoft.Json.Utilities;
+
+
 
 namespace BenthicRework
 {
     [BepInDependency("com.rune580.riskofoptions")]
 
     // Soft Dependencies
-    //[BepInDependency(LookingGlass.PluginInfo.PLUGIN_GUID, BepInDependency.DependencyFlags.SoftDependency)]
+    //Item Qualities Mod
+    [BepInDependency("com.Gorakh.ItemQualities", BepInDependency.DependencyFlags.SoftDependency)]
 
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     [NetworkCompatibility(CompatibilityLevel.NoNeedForSync, VersionStrictness.DifferentModVersionsAreOk)]
@@ -39,6 +46,9 @@ namespace BenthicRework
         public static ConfigEntry<bool> UpgradeLunars;
         public static ConfigEntry<bool> UpgradeSelf;
 
+        // public static ConfigEntry<ItemTier[]> CustomBadTiers;
+        // public static ConfigEntry<ItemIndex[]> CustomBadItems;
+
         public void Awake()
         {
             Log.Init(Logger);
@@ -53,6 +63,9 @@ namespace BenthicRework
             UpgradeLunars = Config.Bind("Allowed Upgrades", "Allow Lunar Upgrades", false, "When enabled, bloom can grant more stacks of lunar items on stage advance.");
             UpgradeSelf = Config.Bind("Allowed Upgrades", "Allow Self Upgrade", false, "When enabled, bloom can grant more stacks of itself on stage advance. Completely unbalanced.");
 
+            // CustomBadTiers = Config.Bind<ItemTier[]>("Allowed Upgrades", "Tier Blacklist", [], "Other Item Tiers Benthic should not upgrade.");
+            // CustomBadItems = Config.Bind<ItemIndex[]>("Allowed Upgrades", "Item Blacklists", [], "Other Items Benthic should not upgrade.");
+
             //Set the max to 100, because only god can judge.
             ModSettingsManager.AddOption(new IntSliderOption(StacksUpgraded,
                 new IntSliderConfig { min = 0, max = 100 }));
@@ -61,12 +74,15 @@ namespace BenthicRework
             ModSettingsManager.AddOption(new CheckBoxOption(UpgradeLunars));
             ModSettingsManager.AddOption(new CheckBoxOption(UpgradeSelf));
 
+
             ModSettingsManager.SetModDescription("Braq's Big Beautiful Benthic Bloom Betterer");
+            var sprite = Addressables.LoadAssetAsync<Sprite>("RoR2/DLC1/CloverVoid/texCloverVoidIcon.png").WaitForCompletion();
+            if(sprite != null) ModSettingsManager.SetModIcon(sprite);
 
             UpdateText();
 
-            StacksUpgraded.SettingChanged += (obj, args) => UpdateText();
-            ItemsAdded.SettingChanged += (obj, args) => UpdateText();
+            //StacksUpgraded.SettingChanged += (obj, args) => UpdateText();
+            //ItemsAdded.SettingChanged += (obj, args) => UpdateText();
 
             IL.RoR2.CharacterMaster.TryCloverVoidUpgrades += CharacterMaster_TryCloverVoidUpgrades;
         }
@@ -129,21 +145,29 @@ namespace BenthicRework
 
                 ItemIndex item = itemsCollected[j];
 
-                if (item == DLC1Content.Items.CloverVoid.itemIndex && !upSelf)
+                ItemTier[] badTiers = [ItemTier.Lunar, ItemTier.NoTier];
+
+                if ((item == DLC1Content.Items.CloverVoid.itemIndex && !upSelf) ||
+                    ItemCatalog.GetItemDef(item).tier == ItemTier.Lunar && !upLunar ||
+                    ItemCatalog.GetItemDef(item).tier == ItemTier.NoTier)
                 {
                     //skip this item
                     j++;
                     continue;
                 }
-                if (ItemCatalog.GetItemDef(item).tier == ItemTier.Lunar && !upLunar)
-                {
-                    //skip this item
-                    j++;
-                    continue;
-                }
+                // if(Array.IndexOf(CustomBadItems.Value, item) >= 0 ||
+                //    Array.IndexOf(CustomBadTiers.Value, ItemCatalog.GetItemDef(item).tier) >= 0)
+                // {
+                //     //skip this item
+                //     j++;
+                //     continue;
+                // }
+                
+
+                // compat.QualityModCompatibility.BenthicQualityEffectHandler(characterMaster, )
 
                 wasUpgraded[j] = true;
-                characterMaster.inventory.GiveItem(item, num2);
+                characterMaster.inventory.GiveItemPermanent(item, num2);
 
                 i++;
                 j++;
